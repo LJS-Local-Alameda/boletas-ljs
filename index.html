@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boletas LJS SpA</title>
+<style>
+:root {
+  --bg: #f8f8f6;
+  --surface: #ffffff;
+  --border: rgba(0,0,0,0.10);
+  --border-strong: rgba(0,0,0,0.18);
+  --text: #1a1a1a;
+  --text-muted: #6b6b6b;
+  --text-faint: #aaa;
+  --green: #1a8a5a;
+  --green-bg: #e6f5ed;
+  --red: #c0392b;
+  --red-bg: #fdf0ef;
+  --accent: #1a1a1a;
+  --radius: 10px;
+  --radius-sm: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); min-height: 100vh; }
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar img { height: 28px; }
+.topbar-title { font-size: 15px; font-weight: 600; }
+.topbar-sub { font-size: 11px; color: var(--text-muted); }
+.topbar-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.container { display: flex; gap: 14px; padding: 14px; max-width: 1200px; margin: 0 auto; }
+.col-left { flex: 1.3; display: flex; flex-direction: column; gap: 12px; }
+.col-right { flex: 0.9; display: flex; flex-direction: column; gap: 12px; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.section-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 10px;
+}
+input, select, textarea {
+  font-family: inherit;
+  font-size: 13.5px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus { border-color: #888; }
+.row { display: flex; gap: 8px; margin-bottom: 8px; }
+.row > * { flex: 1; }
+.btn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s, transform 0.08s;
+  white-space: nowrap;
+}
+.btn:hover { background: var(--bg); }
+.btn:active { transform: scale(0.97); }
+.btn-dark { background: var(--text); color: #fff; border-color: var(--text); }
+.btn-dark:hover { background: #333; }
+.btn-green { background: var(--green); color: #fff; border-color: var(--green); }
+.btn-green:hover { background: #167a4e; }
+.btn-red { color: var(--red); border-color: #f5b7b1; }
+.btn-red:hover { background: var(--red-bg); }
+.items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.items-table th {
+  font-size: 10.5px; font-weight: 600; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 6px 4px; border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.items-table th.r { text-align: right; }
+.items-table th.c { text-align: center; }
+.items-table td { padding: 8px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.items-table tr:last-child td { border-bottom: none; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.center { text-align: center; }
+.qty-ctrl { display: flex; align-items: center; gap: 5px; justify-content: center; }
+.qty-btn {
+  width: 24px; height: 24px; border: 1px solid var(--border-strong);
+  border-radius: 5px; background: transparent; cursor: pointer;
+  font-size: 15px; display: flex; align-items: center; justify-content: center;
+  color: var(--text); line-height: 1;
+}
+.qty-btn:hover { background: var(--bg); }
+.qty-val { width: 28px; text-align: center; font-weight: 600; font-size: 13px; }
+.empty-row td { text-align: center; color: var(--text-faint); padding: 24px 0; font-size: 13px; }
+.catalog-search { margin-bottom: 10px; }
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.cat-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: border-color 0.1s, background 0.1s;
+}
+.cat-item:hover { border-color: #999; background: var(--bg); }
+.cat-item .cat-name { font-size: 12.5px; font-weight: 500; margin-bottom: 2px; line-height: 1.3; }
+.cat-item .cat-price { font-size: 11.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.cat-item .cat-badge {
+  font-size: 9.5px; background: var(--bg); color: var(--text-muted);
+  border-radius: 4px; padding: 1px 5px; float: right; border: 1px solid var(--border);
+  margin-left: 4px;
+}
+.pay-opts { display: flex; gap: 6px; }
+.pay-opt {
+  flex: 1; padding: 7px 4px; text-align: center;
+  font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  cursor: pointer; color: var(--text-muted); transition: all 0.1s;
+}
+.pay-opt.active { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+.totals-block { display: flex; flex-direction: column; gap: 7px; }
+.t-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); align-items: center; }
+.t-grand { font-size: 18px; font-weight: 700; color: var(--text); border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; }
+.disc-row { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.disc-row label { color: var(--text-muted); white-space: nowrap; }
+.disc-row input { width: 64px; flex: none; }
+.disc-amount { margin-left: auto; color: var(--red); font-size: 13px; }
+.action-bar { display: flex; gap: 8px; }
+.historial-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12.5px;
+}
+.historial-item:last-child { border-bottom: none; }
+.h-folio { font-weight: 700; font-variant-numeric: tabular-nums; width: 44px; flex-shrink: 0; }
+.h-info { flex: 1; color: var(--text-muted); font-size: 11.5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.h-total { font-variant-numeric: tabular-nums; white-space: nowrap; margin-right: 4px; }
+.shopify-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #f0faf5; border: 1px solid #b2dfc5;
+  color: #1a7a48; font-size: 11px; font-weight: 600;
+  padding: 3px 9px; border-radius: 20px;
+}
+.shopify-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: #1a8a5a; }
+.folio-display { font-size: 12.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.vendedor-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vendedor-wrap select { flex: 1; }
+.vendedor-wrap button { flex-shrink: 0; padding: 7px 10px; font-size: 12px; }
+.vendedor-badge {
+  display: inline-block;
+  font-size: 10px; font-weight: 600;
+  background: #f0f0ee; color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px; padding: 2px 7px;
+  margin-left: 4px;
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="data:image/png;base64,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" alt="LJS SpA" />
+  <div>
+    <div class="topbar-title">LJS SpA &mdash; Boletas</div>
+    <div class="topbar-sub">Av. Lib. Bernardo O'Higgins 3425, Estación Central &bull; www.ljs.cl</div>
+  </div>
+  <div class="topbar-right">
+    <span class="shopify-badge"><span class="dot"></span>Shopify conectado</span>
+    <button class="btn" onclick="syncShopify()" id="sync-btn">&#8635; Sincronizar</button>
+    <button class="btn btn-dark" onclick="exportarInfo()">&#8659; Exportar app</button>
+  </div>
+</div>
+
+<div class="container">
+  <!-- COLUMNA IZQUIERDA -->
+  <div class="col-left">
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <div class="section-label" style="margin-bottom:2px">Nueva nota de venta</div>
+          <div class="folio-display" id="folio-display">Folio #0001</div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input type="date" id="fecha" style="width:145px;" />
+          <button class="btn btn-red" onclick="nuevaBoleta()">&#10005; Nueva</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Datos del cliente</div>
+      <div class="row">
+        <input type="text" id="cl-nombre" placeholder="Nombre del cliente (opcional)" />
+      </div>
+      <div class="row">
+        <input type="text" id="cl-rut" placeholder="RUT (opcional)" style="flex:0.55;" />
+        <input type="email" id="cl-correo" placeholder="Correo electrónico (opcional)" />
+      </div>
+    </div>
+
+    <div class="card" style="flex:1;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="section-label" style="margin-bottom:0;">Detalle de productos</div>
+        <span style="font-size:11.5px; color:var(--text-muted);" id="item-count">0 unidades</span>
+      </div>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th style="width:42%">Descripción</th>
+            <th class="r" style="width:17%">P. Unit.</th>
+            <th class="c" style="width:22%">Cantidad</th>
+            <th class="r" style="width:14%">Subtotal</th>
+            <th style="width:5%"></th>
+          </tr>
+        </thead>
+        <tbody id="items-body">
+          <tr class="empty-row"><td colspan="5">Selecciona productos desde el catálogo →</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Observaciones</div>
+      <textarea id="nota" rows="2" placeholder="Notas adicionales, instrucciones de entrega, etc..." style="resize:vertical;"></textarea>
+    </div>
+
+  </div>
+
+  <!-- COLUMNA DERECHA -->
+  <div class="col-right">
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="section-label" style="margin-bottom:0;">Catálogo Shopify</div>
+        <button class="btn" onclick="toggleAddManual()" style="font-size:12px; padding:5px 10px;">+ Manual</button>
+      </div>
+      <div id="add-manual" style="display:none; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; margin-bottom:10px;">
+        <div class="row"><input type="text" id="m-nombre" placeholder="Nombre del producto/servicio" /></div>
+        <div class="row">
+          <input type="number" id="m-precio" placeholder="Precio" min="0" step="1" />
+          <select id="m-cat"><option value="manual">Manual</option><option value="servicio">Servicio</option><option value="otro">Otro</option></select>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-dark" onclick="guardarManual()" style="flex:1; font-size:12px;">Guardar</button>
+          <button class="btn" onclick="toggleAddManual()" style="font-size:12px;">Cancelar</button>
+        </div>
+      </div>
+      <input type="text" id="buscar" class="catalog-search" placeholder="Buscar en catálogo..." oninput="renderCatalog()" />
+      <div id="catalog-grid" class="catalog-grid">
+        <div style="grid-column:1/-1; text-align:center; color:var(--text-muted); padding:20px 0; font-size:13px;">Cargando catálogo...</div>
+      </div>
+    </div>
+
+    <!-- Forma de pago -->
+    <div class="card">
+      <div class="section-label">Forma de pago</div>
+      <div class="pay-opts" id="pay-opts">
+        <div class="pay-opt active" onclick="setPago('Efectivo')">Efectivo</div>
+        <div class="pay-opt" onclick="setPago('Débito')">Débito</div>
+        <div class="pay-opt" onclick="setPago('Crédito')">Crédito</div>
+        <div class="pay-opt" onclick="setPago('Transf.')">Transf.</div>
+      </div>
+    </div>
+
+    <!-- Vendedor -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="section-label" style="margin-bottom:0;">Vendedor</div>
+        <button class="btn" onclick="toggleAddVendedor()" style="font-size:12px; padding:4px 10px;">+ Agregar</button>
+      </div>
+      <div id="add-vendedor-form" style="display:none; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px; margin-bottom:10px;">
+        <div class="row"><input type="text" id="v-nuevo" placeholder="Nombre del vendedor" /></div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-dark" onclick="guardarVendedor()" style="flex:1; font-size:12px;">Agregar</button>
+          <button class="btn" onclick="toggleAddVendedor()" style="font-size:12px;">Cancelar</button>
+        </div>
+      </div>
+      <div class="vendedor-wrap">
+        <select id="vendedor-select">
+          <option value="">— Seleccionar vendedor —</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Totales -->
+    <div class="card">
+      <div class="section-label">Resumen</div>
+      <div class="totals-block">
+        <div class="t-row"><span>Subtotal</span><span id="t-sub">$0</span></div>
+        <div class="disc-row">
+          <label>Descuento</label>
+          <input type="number" id="descuento" value="0" min="0" max="100" step="1" oninput="recalc()" />
+          <span style="color:var(--text-muted)">%</span>
+          <span class="disc-amount" id="t-desc">−$0</span>
+        </div>
+        <div class="t-row t-grand"><span>TOTAL</span><span id="t-total">$0</span></div>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button class="btn btn-green" onclick="imprimirBoleta()" style="flex:1; font-size:14px; padding:9px;">&#128438; Imprimir</button>
+      <button class="btn btn-dark" onclick="guardarBoleta()" style="font-size:13px; padding:9px 14px;">&#128190; Guardar</button>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Historial reciente</div>
+      <div id="historial">
+        <div style="color:var(--text-faint); font-size:12.5px;">Sin boletas guardadas aún.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const EMPRESA = {
+  nombre: 'LJS SpA',
+  direccion: "Av. Libertador Bernardo O'Higgins 3425, Est. Central",
+  web: 'www.ljs.cl',
+  logo: 'data:image/png;base64,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'
+};
+
+let catalogo = JSON.parse(localStorage.getItem('ljs_catalogo') || '[]');
+let vendedores = JSON.parse(localStorage.getItem('ljs_vendedores') || '[]');
+let items = [];
+let folio = parseInt(localStorage.getItem('ljs_folio') || '1');
+let boletas = JSON.parse(localStorage.getItem('ljs_boletas') || '[]');
+let pago = 'Efectivo';
+let nextId = parseInt(localStorage.getItem('ljs_nextId') || '1000');
+
+const fmt = n => '$' + Math.round(n).toLocaleString('es-CL');
+
+document.getElementById('folio-display').textContent = 'Folio #' + String(folio).padStart(4,'0');
+document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+
+// === VENDEDORES ===
+function renderVendedores() {
+  const sel = document.getElementById('vendedor-select');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— Seleccionar vendedor —</option>' +
+    vendedores.map(v => `<option value="${v}"${v===current?' selected':''}>${v}</option>`).join('');
+}
+
+function toggleAddVendedor() {
+  const f = document.getElementById('add-vendedor-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  if (f.style.display === 'block') document.getElementById('v-nuevo').focus();
+}
+
+function guardarVendedor() {
+  const nombre = document.getElementById('v-nuevo').value.trim();
+  if (!nombre) { alert('Ingresa el nombre del vendedor.'); return; }
+  if (vendedores.includes(nombre)) { alert('Ese vendedor ya existe.'); return; }
+  vendedores.push(nombre);
+  localStorage.setItem('ljs_vendedores', JSON.stringify(vendedores));
+  document.getElementById('v-nuevo').value = '';
+  toggleAddVendedor();
+  renderVendedores();
+  document.getElementById('vendedor-select').value = nombre;
+}
+
+renderVendedores();
+
+// === SHOPIFY SYNC ===
+async function syncShopify() {
+  const btn = document.getElementById('sync-btn');
+  btn.textContent = '⟳ Sincronizando...';
+  btn.disabled = true;
+  document.getElementById('catalog-grid').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:20px 0;font-size:13px;">Conectando con Shopify...</div>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        mcp_servers: [{ type: 'url', url: 'https://setup.shopify.com/mcp', name: 'shopify' }],
+        messages: [{ role: 'user', content: 'Usa search_products para traer los primeros 50 productos activos. Responde SOLO con JSON sin texto adicional ni markdown: {"products": [{"id":"string","title":"string","price":number,"type":"string","variants":[{"title":"string","price":number}]}]}' }]
+      })
+    });
+    const data = await res.json();
+    let jsonText = '';
+    for (const block of data.content) {
+      if (block.type === 'mcp_tool_result') { jsonText = block.content?.[0]?.text || ''; break; }
+      if (block.type === 'text' && block.text.includes('"products"')) jsonText = block.text;
+    }
+    let parsed = null;
+    try { parsed = JSON.parse(jsonText); } catch(e) {
+      const m = jsonText.match(/\{[\s\S]*\}/);
+      if (m) parsed = JSON.parse(m[0]);
+    }
+    if (parsed && parsed.products) {
+      const nuevos = [];
+      for (const p of parsed.products) {
+        if (p.variants && p.variants.length > 1) {
+          for (const v of p.variants) nuevos.push({ id: p.id+'_'+v.title, nombre: p.title+' - '+v.title, precio: v.price, tipo: p.type||'Shopify', fuente:'shopify' });
+        } else {
+          nuevos.push({ id: p.id, nombre: p.title, precio: p.price, tipo: p.type||'Shopify', fuente:'shopify' });
+        }
+      }
+      const manuales = catalogo.filter(x => x.fuente !== 'shopify');
+      catalogo = [...nuevos, ...manuales];
+      localStorage.setItem('ljs_catalogo', JSON.stringify(catalogo));
+      renderCatalog();
+      btn.textContent = '✓ Sincronizado';
+      setTimeout(() => { btn.textContent = '⟳ Sincronizar'; btn.disabled = false; }, 2000);
+    } else throw new Error('Parse error');
+  } catch(err) {
+    usarDatosEmbebidos();
+    btn.textContent = 'ⓘ Datos locales';
+    setTimeout(() => { btn.textContent = '⟳ Sincronizar'; btn.disabled = false; }, 2500);
+  }
+}
+
+function usarDatosEmbebidos() {
+  const shopifyData = [
+    {"id":"s1","nombre":"Balón Baby fútbol Prime","precio":15900,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s2","nombre":"Balón fútbol Prime N°5","precio":15290,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s3","nombre":"Balón Fútbol Prime #4","precio":17190,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s4","nombre":"Balón basquetbol #5 Space Jam","precio":12800,"tipo":"Basquetbol","fuente":"shopify"},
+    {"id":"s5b","nombre":"Balón Basquetbol Reebok Royal3 N°5","precio":20200,"tipo":"Basquetbol","fuente":"shopify"},
+    {"id":"s5c","nombre":"Balón Basquetbol Reebok Royal3 N°6","precio":20790,"tipo":"Basquetbol","fuente":"shopify"},
+    {"id":"s5d","nombre":"Balón Basquetbol Reebok Royal3 N°7","precio":21190,"tipo":"Basquetbol","fuente":"shopify"},
+    {"id":"s6","nombre":"Balón Fútbol Reebok Zig Generation","precio":13600,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s7","nombre":"Balón Futbolito Tornado #4","precio":21490,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s8a","nombre":"Balón Basquetbol Rojo c/Negro N°3","precio":8990,"tipo":"Basquetbol","fuente":"shopify"},
+    {"id":"s8b","nombre":"Balón Basquetbol Rojo c/Negro N°7","precio":9990,"tipo":"Basquetbol","fuente":"shopify"},
+    {"id":"s9","nombre":"Balón Basquetbol Spalding TF250 N°7","precio":38990,"tipo":"Basquetbol","fuente":"shopify"},
+    {"id":"s10","nombre":"Balón fútbol Official N°5 DRB","precio":12500,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s11a","nombre":"Balón Star 2 Amarillo","precio":7390,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s11b","nombre":"Balón Star 2 Azul","precio":7390,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s11c","nombre":"Balón Star 2 Rojo","precio":7390,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s12","nombre":"Balón Voleibol Beach","precio":11990,"tipo":"Voleibol","fuente":"shopify"},
+    {"id":"s13","nombre":"Balón Voleibol Soft Touch 3.0","precio":13200,"tipo":"Voleibol","fuente":"shopify"},
+    {"id":"s14","nombre":"Balón Voleibol Soft 3.0 Italy","precio":14700,"tipo":"Voleibol","fuente":"shopify"},
+    {"id":"s15","nombre":"Balón Voleibol Soft Touch 5.0","precio":16990,"tipo":"Voleibol","fuente":"shopify"},
+    {"id":"s16","nombre":"Balón Voleibol Reebok Royal 3","precio":17980,"tipo":"Voleibol","fuente":"shopify"},
+    {"id":"s17","nombre":"Balón Fútbol Playa Reebok","precio":12760,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s18a","nombre":"Balón Basquetbol Zig Gen N°3","precio":9340,"tipo":"Basquetbol","fuente":"shopify"},
+    {"id":"s18b","nombre":"Balón Basquetbol Zig Gen N°5","precio":12500,"tipo":"Basquetbol","fuente":"shopify"},
+    {"id":"s18c","nombre":"Balón Basquetbol Zig Gen N°6","precio":13100,"tipo":"Basquetbol","fuente":"shopify"},
+    {"id":"s18d","nombre":"Balón Basquetbol Zig Gen N°7","precio":13500,"tipo":"Basquetbol","fuente":"shopify"},
+    {"id":"s19","nombre":"Balón Voleibol Classic 1.0","precio":8950,"tipo":"Voleibol","fuente":"shopify"},
+    {"id":"s20a","nombre":"Balón Pilates 45cm","precio":8990,"tipo":"Pilates","fuente":"shopify"},
+    {"id":"s20b","nombre":"Balón Pilates 55cm","precio":9990,"tipo":"Pilates","fuente":"shopify"},
+    {"id":"s20c","nombre":"Balón Pilates 65cm","precio":10990,"tipo":"Pilates","fuente":"shopify"},
+    {"id":"s20d","nombre":"Balón Pilates 75cm","precio":12990,"tipo":"Pilates","fuente":"shopify"},
+    {"id":"s20e","nombre":"Balón Pilates 85cm","precio":15990,"tipo":"Pilates","fuente":"shopify"},
+    {"id":"s21","nombre":"Rueda Abdominal Doble","precio":9300,"tipo":"Fitness","fuente":"shopify"},
+    {"id":"s22a","nombre":"Porta celular deportivo Fucsia","precio":5990,"tipo":"Running","fuente":"shopify"},
+    {"id":"s22b","nombre":"Porta celular deportivo Rojo","precio":5990,"tipo":"Running","fuente":"shopify"},
+    {"id":"s23","nombre":"Banca Abdominal Regulable","precio":90990,"tipo":"Máquinas","fuente":"shopify"},
+    {"id":"s24","nombre":"Banda Calistenia Café 31mm","precio":13500,"tipo":"Calistenia","fuente":"shopify"},
+    {"id":"s25","nombre":"Banda Calistenia Negra 22mm","precio":10990,"tipo":"Calistenia","fuente":"shopify"},
+    {"id":"s26","nombre":"Banda Calistenia Roja 13mm","precio":8490,"tipo":"Calistenia","fuente":"shopify"},
+    {"id":"s27","nombre":"Banda Elástica Amarilla DRB 0.35mm","precio":4400,"tipo":"Fitness","fuente":"shopify"},
+    {"id":"s28","nombre":"Banda Elástica Azul DRB 0.65mm","precio":6700,"tipo":"Fitness","fuente":"shopify"},
+    {"id":"s29","nombre":"Banda Elástica Roja DRB 0.55mm","precio":5600,"tipo":"Fitness","fuente":"shopify"},
+    {"id":"s30","nombre":"Barra 14 pulgadas","precio":8000,"tipo":"Barra","fuente":"shopify"},
+    {"id":"s31","nombre":"Barra Preolímpica 150cm","precio":25000,"tipo":"Barra","fuente":"shopify"},
+    {"id":"s32","nombre":"Rueda Abdominal Big Wheel","precio":22400,"tipo":"Fitness","fuente":"shopify"},
+    {"id":"s33","nombre":"Body Trimmer Banda Elástica","precio":9600,"tipo":"Fitness","fuente":"shopify"},
+    {"id":"s34","nombre":"Bombín de Pie con Marcador","precio":17000,"tipo":"Accesorios","fuente":"shopify"},
+    {"id":"s35","nombre":"Bombín Premium Rojo","precio":8990,"tipo":"Accesorios","fuente":"shopify"},
+    {"id":"s36","nombre":"Barra Preolímpica 180cm","precio":28000,"tipo":"Barra","fuente":"shopify"},
+    {"id":"s37","nombre":"Barra Preolímpica WW","precio":25000,"tipo":"Barra","fuente":"shopify"},
+    {"id":"s38","nombre":"Canilleras Cup DRB XS","precio":5300,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s39","nombre":"Canilleras Cup DRB M","precio":5300,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s40","nombre":"Cinta Capitán c/Velcro Amarillo","precio":3200,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s41","nombre":"Cinta Capitán c/Velcro Verde","precio":3200,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s42","nombre":"Cinta Capitán c/Velcro Rojo","precio":3200,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s43","nombre":"Cinta Capitán Elásticada Rojo","precio":3200,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s44","nombre":"Cinta Capitán Elásticada Verde","precio":3200,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s45","nombre":"Cinta Capitán Elásticada Tricolor","precio":3200,"tipo":"Fútbol","fuente":"shopify"},
+    {"id":"s46","nombre":"Banda Reflectante DRB Running","precio":2300,"tipo":"Running","fuente":"shopify"},
+    {"id":"s47","nombre":"Cintillo Blanco Sufix","precio":3200,"tipo":"Running","fuente":"shopify"},
+    {"id":"s48","nombre":"Cinto Running Amarillo Flúor","precio":8390,"tipo":"Running","fuente":"shopify"},
+    {"id":"s49","nombre":"Camiseta Arquero Manga Larga LJS","precio":14990,"tipo":"Camiseta","fuente":"shopify"}
+  ];
+  const manuales = catalogo.filter(x => x.fuente !== 'shopify');
+  catalogo = [...shopifyData, ...manuales];
+  localStorage.setItem('ljs_catalogo', JSON.stringify(catalogo));
+  renderCatalog();
+}
+
+if (catalogo.length === 0) { usarDatosEmbebidos(); } else { renderCatalog(); }
+
+// === CATÁLOGO ===
+function renderCatalog() {
+  const q = document.getElementById('buscar').value.toLowerCase().trim();
+  const grid = document.getElementById('catalog-grid');
+  const filtered = catalogo.filter(p => p.nombre.toLowerCase().includes(q) || (p.tipo||'').toLowerCase().includes(q));
+  if (!filtered.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-muted);padding:20px 0;font-size:13px;">Sin resultados</div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(p => `
+    <div class="cat-item" onclick="addItem('${p.id}')">
+      <span class="cat-badge">${p.tipo||''}</span>
+      <div class="cat-name">${p.nombre}</div>
+      <div class="cat-price">${fmt(p.precio)}</div>
+    </div>`).join('');
+}
+
+// === ITEMS ===
+function addItem(id) {
+  const p = catalogo.find(x => String(x.id) === String(id));
+  if (!p) return;
+  const ex = items.find(x => String(x.id) === String(id));
+  if (ex) { ex.qty++; } else { items.push({ ...p, qty: 1 }); }
+  renderItems(); recalc();
+}
+function changeQty(id, d) {
+  const i = items.find(x => String(x.id) === String(id));
+  if (!i) return;
+  i.qty += d;
+  if (i.qty <= 0) items = items.filter(x => String(x.id) !== String(id));
+  renderItems(); recalc();
+}
+function removeItem(id) {
+  items = items.filter(x => String(x.id) !== String(id));
+  renderItems(); recalc();
+}
+function renderItems() {
+  const tbody = document.getElementById('items-body');
+  document.getElementById('item-count').textContent = items.reduce((s,i)=>s+i.qty,0) + ' unidades';
+  if (!items.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Selecciona productos desde el catálogo →</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(item => `
+    <tr>
+      <td style="font-size:12.5px;">${item.nombre}</td>
+      <td class="num" style="font-size:12px;">${fmt(item.precio)}</td>
+      <td>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="changeQty('${item.id}',-1)">−</button>
+          <span class="qty-val">${item.qty}</span>
+          <button class="qty-btn" onclick="changeQty('${item.id}',1)">+</button>
+        </div>
+      </td>
+      <td class="num" style="font-size:12.5px; font-weight:600;">${fmt(item.precio*item.qty)}</td>
+      <td><button class="btn btn-red" onclick="removeItem('${item.id}')" style="padding:3px 7px; font-size:11px;">✕</button></td>
+    </tr>`).join('');
+}
+
+// === TOTALES ===
+function recalc() {
+  const sub = items.reduce((s,i) => s+i.precio*i.qty, 0);
+  const desc = Math.max(0, Math.min(100, parseFloat(document.getElementById('descuento').value)||0));
+  const dv = sub*desc/100;
+  document.getElementById('t-sub').textContent = fmt(sub);
+  document.getElementById('t-desc').textContent = desc > 0 ? '−'+fmt(dv) : '−$0';
+  document.getElementById('t-total').textContent = fmt(sub-dv);
+}
+
+// === PAGO ===
+function setPago(p) {
+  pago = p;
+  document.querySelectorAll('.pay-opt').forEach(el => el.classList.toggle('active', el.textContent.trim()===p));
+}
+
+// === MANUAL ===
+function toggleAddManual() {
+  const f = document.getElementById('add-manual');
+  f.style.display = f.style.display==='none' ? 'block' : 'none';
+}
+function guardarManual() {
+  const nombre = document.getElementById('m-nombre').value.trim();
+  const precio = parseFloat(document.getElementById('m-precio').value);
+  const tipo = document.getElementById('m-cat').value;
+  if (!nombre || isNaN(precio) || precio < 0) { alert('Completa nombre y precio.'); return; }
+  catalogo.unshift({ id:'manual_'+(nextId++), nombre, precio, tipo, fuente:'manual' });
+  localStorage.setItem('ljs_catalogo', JSON.stringify(catalogo));
+  localStorage.setItem('ljs_nextId', nextId);
+  document.getElementById('m-nombre').value = '';
+  document.getElementById('m-precio').value = '';
+  toggleAddManual();
+  renderCatalog();
+}
+
+// === BOLETA ===
+function getBoleta() {
+  const sub = items.reduce((s,i)=>s+i.precio*i.qty,0);
+  const desc = Math.max(0,Math.min(100,parseFloat(document.getElementById('descuento').value)||0));
+  const dv = sub*desc/100;
+  return {
+    folio, fecha: document.getElementById('fecha').value,
+    cliente: {
+      nombre: document.getElementById('cl-nombre').value.trim(),
+      rut: document.getElementById('cl-rut').value.trim(),
+      correo: document.getElementById('cl-correo').value.trim()
+    },
+    vendedor: document.getElementById('vendedor-select').value,
+    items: JSON.parse(JSON.stringify(items)),
+    pago, descuento: desc, descuentoVal: dv, subtotal: sub, total: sub-dv,
+    nota: document.getElementById('nota').value.trim()
+  };
+}
+
+function guardarBoleta() {
+  if (!items.length) { alert('Agrega al menos un producto.'); return; }
+  const b = getBoleta();
+  boletas.unshift(b);
+  if (boletas.length > 100) boletas = boletas.slice(0,100);
+  localStorage.setItem('ljs_boletas', JSON.stringify(boletas));
+  folio++;
+  localStorage.setItem('ljs_folio', folio);
+  document.getElementById('folio-display').textContent = 'Folio #' + String(folio).padStart(4,'0');
+  renderHistorial();
+  nuevaBoleta();
+  alert('✓ Boleta #' + b.folio + ' guardada.');
+}
+
+function nuevaBoleta() {
+  items = [];
+  ['cl-nombre','cl-rut','cl-correo','nota'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('descuento').value = '0';
+  document.getElementById('fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('vendedor-select').value = '';
+  setPago('Efectivo');
+  renderItems(); recalc();
+}
+
+// === HISTORIAL ===
+function renderHistorial() {
+  const el = document.getElementById('historial');
+  if (!boletas.length) {
+    el.innerHTML = '<div style="color:var(--text-faint);font-size:12.5px;">Sin boletas guardadas aún.</div>';
+    return;
+  }
+  el.innerHTML = boletas.slice(0,8).map(b => `
+    <div class="historial-item">
+      <span class="h-folio">#${String(b.folio).padStart(4,'0')}</span>
+      <span class="h-info">${b.fecha}${b.cliente.nombre?' · '+b.cliente.nombre:''}${b.vendedor?' · '+b.vendedor:''}</span>
+      <span class="h-total">${fmt(b.total)}</span>
+      <button class="btn" onclick="reimprimir(${b.folio})" style="font-size:11px;padding:3px 8px;">&#128438;</button>
+    </div>`).join('');
+}
+
+// === IMPRESIÓN ===
+function buildTicket(b) {
+  const filas = b.items.map(i => `
+    <tr>
+      <td style="padding:3px 0;word-break:break-word;">${i.nombre}</td>
+      <td style="text-align:center;padding:3px 2px;white-space:nowrap;">${i.qty}</td>
+      <td style="text-align:right;white-space:nowrap;">${fmt(i.precio)}</td>
+      <td style="text-align:right;font-weight:bold;white-space:nowrap;">${fmt(i.precio*i.qty)}</td>
+    </tr>`).join('');
+  return `<!DOCTYPE html><html lang="es"><head>
+<meta charset="utf-8">
+<title>LJS SpA - Boleta #${String(b.folio).padStart(4,'0')}</title>
+<style>
+  @page{margin:2mm 3mm;size:80mm auto;}
+  *{box-sizing:border-box;}
+  body{font-family:'Courier New',Courier,monospace;font-size:11.5px;width:74mm;margin:0 auto;padding:5px 2px 10px;color:#000;background:#fff;line-height:1.35;}
+  .center{text-align:center;}
+  .logo-wrap{text-align:center;margin-bottom:3px;}
+  .logo-wrap img{max-width:50mm;max-height:15mm;object-fit:contain;}
+  .empresa{font-size:13px;font-weight:bold;text-align:center;}
+  .sub{font-size:9.5px;text-align:center;color:#444;line-height:1.4;margin-bottom:2px;}
+  .doc{font-size:12.5px;font-weight:bold;text-align:center;margin:5px 0 1px;}
+  .folio{text-align:center;font-size:11.5px;}
+  .fecha{text-align:center;font-size:10.5px;color:#555;margin-bottom:3px;}
+  .sep{border:none;border-top:1px dashed #000;margin:4px 0;}
+  .sep2{border:none;border-top:1px solid #000;margin:4px 0;}
+  .cli{font-size:10.5px;margin-bottom:2px;}
+  .cli b{font-weight:bold;}
+  table{width:100%;border-collapse:collapse;}
+  th{font-size:10px;padding:2px 0;border-bottom:1px solid #000;text-align:left;}
+  th.r{text-align:right;}th.c{text-align:center;}
+  td{font-size:11px;}
+  .tblock{margin-top:3px;}
+  .trow{display:flex;justify-content:space-between;font-size:11px;padding:1px 0;}
+  .tgrand{font-size:15px;font-weight:bold;border-top:1px solid #000;margin-top:3px;padding-top:3px;display:flex;justify-content:space-between;}
+  .pagrow{display:flex;justify-content:space-between;font-size:10.5px;color:#444;margin-top:2px;}
+  .vendrow{display:flex;justify-content:space-between;font-size:10.5px;color:#444;margin-top:1px;}
+  .nota{font-size:10px;font-style:italic;margin-top:2px;}
+  .footer{text-align:center;margin-top:6px;font-size:10px;color:#444;line-height:1.5;}
+  .footer strong{font-size:11px;color:#000;display:block;}
+  @media print{body{width:74mm;}}
+</style></head><body>
+<div class="logo-wrap"><img src="${EMPRESA.logo}" alt="LJS SpA"/></div>
+<div class="empresa">${EMPRESA.nombre}</div>
+<div class="sub">${EMPRESA.direccion}<br>${EMPRESA.web}</div>
+<hr class="sep">
+<div class="doc">NOTA DE VENTA</div>
+<div class="folio">N° ${String(b.folio).padStart(4,'0')}</div>
+<div class="fecha">Fecha: ${b.fecha}</div>
+${(b.cliente.nombre||b.cliente.rut||b.cliente.correo) ? `<hr class="sep"><div class="cli">
+  ${b.cliente.nombre?`<div><b>Cliente:</b> ${b.cliente.nombre}</div>`:''}
+  ${b.cliente.rut?`<div><b>RUT:</b> ${b.cliente.rut}</div>`:''}
+  ${b.cliente.correo?`<div><b>Correo:</b> ${b.cliente.correo}</div>`:''}
+</div>`:''}<hr class="sep2">
+<table><thead><tr>
+  <th style="width:44%">Descripción</th>
+  <th class="c" style="width:10%">Cant</th>
+  <th class="r" style="width:22%">P.Unit</th>
+  <th class="r" style="width:24%">Total</th>
+</tr></thead><tbody>${filas}</tbody></table>
+<hr class="sep2">
+<div class="tblock">
+  <div class="trow"><span>Subtotal</span><span>${fmt(b.subtotal)}</span></div>
+  ${b.descuento>0?`<div class="trow"><span>Descuento (${b.descuento}%)</span><span>- ${fmt(b.descuentoVal)}</span></div>`:''}
+  <div class="tgrand"><span>TOTAL</span><span>${fmt(b.total)}</span></div>
+  <div class="pagrow"><span>Forma de pago:</span><span>${b.pago}</span></div>
+  ${b.vendedor?`<div class="vendrow"><span>Vendedor:</span><span>${b.vendedor}</span></div>`:''}
+</div>
+${b.nota?`<hr class="sep"><div class="nota">Obs: ${b.nota}</div>`:''}
+<hr class="sep">
+<div class="footer"><strong>¡Gracias por su preferencia!</strong>Conserve este comprobante<br>${EMPRESA.web}</div>
+</body></html>`;
+}
+
+function imprimirBoleta() {
+  if (!items.length) { alert('Agrega al menos un producto antes de imprimir.'); return; }
+  const b = getBoleta();
+  openPrint(b);
+}
+function reimprimir(f) {
+  const b = boletas.find(x => x.folio===f);
+  if (b) openPrint(b);
+}
+function openPrint(b) {
+  const html = buildTicket(b);
+  const win = window.open('','_blank','width:370,height:680,toolbar=0,menubar=0,scrollbars=1,status=0');
+  if (!win) { alert('Permite las ventanas emergentes para imprimir.'); return; }
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => { win.focus(); setTimeout(()=>win.print(),350); };
+}
+
+function exportarInfo() {
+  alert('Para usar en otro computador:\n\n1. Ctrl+S en esta página → "Guardar página completa"\n2. Copia el archivo .html al PC del local\n3. Ábrelo con Chrome o Edge\n\nEl catálogo y el logo ya están embebidos.');
+}
+
+renderHistorial();
+recalc();
+</script>
+</body>
+</html>
